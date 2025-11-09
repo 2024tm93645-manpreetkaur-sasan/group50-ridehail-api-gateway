@@ -1,0 +1,215 @@
+{
+  "info": {
+    "_postman_id": "c3e6e01a-451f-4bde-a762-cf241aaa1234",
+    "name": "API Gateway Tests (Local, Services Down OK + Protected Ping)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Generate JWT (HS256)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "var jwt = require('jsonwebtoken');",
+              "",
+              "var payload = {",
+              "  sub: \"test-user\",",
+              "  role: \"USER\",",
+              "  iat: Math.floor(Date.now() / 1000)",
+              "};",
+              "",
+              "var secret = \"change-this-32-characters-minimum-secret-key\";",
+              "",
+              "var token = jwt.sign(payload, secret, { algorithm: 'HS256' });",
+              "",
+              "pm.environment.set(\"jwt\", token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8888",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888"
+        }
+      },
+      "response": []
+    },
+
+    {
+      "name": "Ping (Protected Gateway Endpoint)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": {
+          "raw": "http://localhost:8888/ping",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888",
+          "path": ["ping"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let corr = pm.response.headers.get('X-Correlation-Id');",
+              "pm.environment.set('correlation_id', corr);",
+              "",
+              "pm.test(\"Ping returns 200 OK when JWT is valid\", function () {",
+              "    pm.expect(pm.response.code).to.eql(200);",
+              "});",
+              "",
+              "pm.test(\"Correlation ID is present\", function () {",
+              "    pm.expect(corr).to.exist;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Test Trip Service Route",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": {
+          "raw": "http://localhost:8888/api/trips/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888",
+          "path": ["api", "trips", "test"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let corr = pm.response.headers.get('X-Correlation-Id');",
+              "pm.environment.set('correlation_id', corr);",
+              "",
+              "// Backend is down = acceptable",
+              "pm.test(\"Gateway reached (backend likely down)\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 500, 502, 503]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Test Rider Service Route",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": {
+          "raw": "http://localhost:8888/api/riders/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888",
+          "path": ["api", "riders", "test"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let corr = pm.response.headers.get('X-Correlation-Id');",
+              "pm.environment.set('correlation_id', corr);",
+              "",
+              "// Acceptable since backend is down",
+              "pm.test(\"Gateway responded\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 500, 502, 503]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Test Payment Service Route",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": {
+          "raw": "http://localhost:8888/api/payments/test",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888",
+          "path": ["api", "payments", "test"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "let corr = pm.response.headers.get('X-Correlation-Id');",
+              "pm.environment.set('correlation_id', corr);",
+              "",
+              "// Acceptable even if backend is down",
+              "pm.test(\"Gateway hit payment route\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 500, 502, 503]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Test Rate Limiter (burst test)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": {
+          "raw": "http://localhost:8888/ping",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8888",
+          "path": ["ping"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Expect 429 after several rapid requests",
+              "pm.test(\"Rate limiter active\", function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 429]);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

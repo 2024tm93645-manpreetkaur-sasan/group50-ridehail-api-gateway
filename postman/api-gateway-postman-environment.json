@@ -1,0 +1,33 @@
+{
+  "id": "d92c8a61-1d88-4a7b-8f5d-1fd8336f1111",
+  "name": "API Gateway Local Environment",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8888",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "jwt",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "correlation_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "api_key",
+      "value": "demo-key",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2025-01-01T00:00:00.000Z",
+  "_postman_exported_using": "Postman/10.22.0"
+}
