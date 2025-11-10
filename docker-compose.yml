@@ -2,5 +2,7 @@
 services:
   gateway:
     build: .
+    image: api-gateway:latest
+    container_name: api-gateway
     ports:
       - "8888:8888"

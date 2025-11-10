@@ -1,8 +1,10 @@
 package com.rhf.gateway.filter;
 
+import org.slf4j.MDC;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.SignalType;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;
@@ -10,40 +12,45 @@ import java.util.UUID;
 @Component("CorrelationId")
 public class CorrelationIdGatewayFilterFactory extends AbstractGatewayFilterFactory<Object> {
 
+    public static final String HEADER = "X-Correlation-Id";
+    public static final String MDC_KEY = "correlationId";
+
     @Override
     public GatewayFilter apply(Object config) {
 
         return (exchange, chain) -> {
 
-            // 1. Read or create correlation ID
-            String cid = exchange.getRequest().getHeaders().getFirst("X-Correlation-Id");
-            if (cid == null || cid.isEmpty()) {
+            // 1. Read or create ID
+            String cid = exchange.getRequest().getHeaders().getFirst(HEADER);
+            if (cid == null || cid.isBlank()) {
                 cid = UUID.randomUUID().toString();
             }
 
-            // 2. Always set header on *response immediately* (for error cases)
-            exchange.getResponse().getHeaders().set("X-Correlation-Id", cid);
+            // 2. Add correlation ID to MDC (for logs)
+            MDC.put(MDC_KEY, cid);
 
-            // 3. Mutate request to propagate to downstream services
+            // 3. Add header early—even for errors
+            exchange.getResponse().getHeaders().set(HEADER, cid);
+
+            // 4. Propagate header to downstream
             var mutatedExchange = exchange.mutate()
                     .request(exchange.getRequest()
                             .mutate()
-                            .header("X-Correlation-Id", cid)
+                            .header(HEADER, cid)
                             .build())
                     .build();
 
-            // 4. Ensure it's set for successful responses
             String finalCid = cid;
+
             return chain.filter(mutatedExchange)
-                    .doOnError(err -> {
-                        // error path - header already set
-                    })
-                    .then(Mono.fromRunnable(() -> {
-                        // success path - ensure header is still present
-                        mutatedExchange.getResponse()
-                                .getHeaders()
-                                .set("X-Correlation-Id", finalCid);
-                    }));
+                    // ensure response always contains the correlation id
+                    .then(Mono.fromRunnable(() ->
+                            mutatedExchange.getResponse()
+                                    .getHeaders()
+                                    .set(HEADER, finalCid)
+                    ))
+                    // Cleanup MDC after request completes (success, error, cancel)
+                    .doFinally(signalType -> MDC.remove(MDC_KEY)).then();
         };
     }
 }
