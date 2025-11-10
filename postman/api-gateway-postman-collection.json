@@ -1,0 +1,158 @@
+{
+  "info": {
+    "_postman_id": "c3e6e01a-451f-4bde-a762-cf241aaa5678",
+    "name": "Ride-Hail API Gateway Collection (Trip + Rider + Payment)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+
+  "item": [
+    
+    {
+      "name": "Trips",
+      "item": [
+        {
+          "name": "Create Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "http://localhost:8888/api/trips",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"rider_id\":1, \"pickup_zone\":\"A1\", \"drop_zone\":\"B5\"}"
+            }
+          }
+        },
+
+        {
+          "name": "Get Trip By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/trips/1"
+          }
+        },
+
+        {
+          "name": "Accept Trip",
+          "request": {
+            "method": "PATCH",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/trips/1/accept"
+          }
+        },
+
+        {
+          "name": "Cancel Trip",
+          "request": {
+            "method": "PATCH",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/trips/1/cancel"
+          }
+        },
+
+        {
+          "name": "Complete Trip + Auto Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "http://localhost:8888/api/trips/1/complete",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"distance_km\": 12.5, \"method\": \"CARD\"}"
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Riders",
+      "item": [
+        {
+          "name": "Get Rider By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/riders/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Charge Payment (MANUAL)",
+          "request": {
+            "method": "POST",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "http://localhost:8888/api/payments/charge",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"trip_id\": 1, \"amount\": 200, \"method\": \"CARD\", \"status\": \"COMPLETED\"}"
+            }
+          }
+        },
+
+        {
+          "name": "Refund Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/payments/1/refund"
+          }
+        },
+
+        {
+          "name": "Get Payment by Trip ID",
+          "request": {
+            "method": "GET",
+            "header": [
+
+              { "key": "X-Api-Key", "value": "demo-key" }
+            ],
+            "url": "http://localhost:8888/api/payments/trip/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rate Limiter Test",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{jwt}}" },
+          { "key": "X-Api-Key", "value": "demo-key" }
+        ],
+        "url": "http://localhost:8888/ping"
+      }
+    }
+  ]
+}
